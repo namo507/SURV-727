@@ -1,6 +1,7 @@
 ---
 title: "Assignment 2"
 subtitle: "Due at 11:59pm on October 1."
+Name: "Namit Shrivastava and Sagnik Chakravarty_ Group 7"
 format: pdf
 editor: visual
 ---
