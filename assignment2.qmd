@@ -4,6 +4,7 @@ subtitle: "Due at 11:59pm on October 1."
 Name: "Namit Shrivastava and Sagnik Chakravarty_ Group 7"
 format: pdf
 editor: visual
+toc: TRUE
 ---
 
 You may work in pairs or individually for this assignment. Make sure you join a group in Canvas if you are working in pairs. Turn in this assignment as an HTML or PDF file to ELMS. Make sure to include the R Markdown or Quarto file that was used to generate it.
