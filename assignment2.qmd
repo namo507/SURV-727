@@ -165,7 +165,7 @@ head(joined_il, n = 5)
 # Question 2
 
 results <- joined_il %>% 
-  mutate(income_group = if_else(hh_income > median(hh_income), 'high income', 'low income')) %>%
+  mutate(income_group = if_else(hh_income > median(acs_il$hh_income, na.rm = TRUE), 'high income', 'low income')) %>%
   group_by(income_group) %>%
   summarise(mean_crime = mean(crime),
             mean_loans = mean(loans)) %>%
