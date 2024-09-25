@@ -42,6 +42,42 @@ Answer the following questions for the keywords "crime" and "loans".
 
 Repeat the above for keywords related to covid. Make sure you use multiple keywords like we did above. Try several different combinations and think carefully about words that might make sense within this context.
 
+```{r fig.height=8, fig.width=12, message=FALSE, warning=FALSE}
+# Question 1
+head(res$interest_over_time, n = 5)
+sum_res_all <- res$interest_over_time %>% group_by(keyword) %>%
+  summarize(mean = mean(hits),
+            median = median(hits),
+            variance = var(hits))
+sum_res_all
+
+# Question 2
+head(res$interest_by_city, n = 5)
+freq_res_cities <- res$interest_by_city %>%select(c(location, keyword, hits))%>%group_by(keyword, location) %>% summarize(total_hits = sum(hits)) %>% ungroup() %>% filter(total_hits > 0) 
+
+head(arrange(freq_res_cities, desc(total_hits)), n = 10)
+
+freq_res_city_spread <- spread(freq_res_cities, key = keyword, value = total_hits)%>% 
+  mutate(across(where(is.numeric), ~ replace_na(.,0)))
+head(freq_res_city_spread, n = 5)
+freq_res_city_spread %>% filter(crime > 0 & loans > 0)
+
+ggplot(freq_res_cities, aes(x = location, y = total_hits, fill = keyword))+
+  geom_bar(stat = 'identity', position = 'dodge', color = 'black', width = 0.65)+
+  labs(title = "Total Hits by Location Colored by Keyword",
+       x = "Location", 
+       y = "Total Hits",
+       caption = 'Historgram for cities with search popularity') +
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_fill_brewer(palette = "Set2")
+
+# Question 3
+corel <- cor(freq_res_city_spread$crime, freq_res_city_spread$loans)
+cat("The correlation between crime and loan:\t", corel)
+cor.test(freq_res_city_spread$crime, freq_res_city_spread$loans)
+```
+
 ## Google Trends + ACS
 
 Now lets add another data set. The `censusapi` package provides a nice R interface for communicating with this API. However, before running queries we need an access key. This (easy) process can be completed here:
@@ -83,7 +119,7 @@ Now, it might be useful to rename the socio-demographic variables (`B01001_001E`
 ```{r}
 acs_il <-
   acs_il %>%
-  rename(pop = B01001_001E, 
+  dplyr :: rename(pop = B01001_001E, 
          age = B06002_001E, 
          hh_income = B19013_001E, 
          income = B19301_001E)
@@ -100,3 +136,53 @@ Answer the following questions with the "crime" and "loans" Google trends data a
 -   Is there a relationship between the median household income and the search popularity of the Google trends terms? Describe the relationship and use a scatterplot with `qplot()`.
 
 Repeat the above steps using the covid data and the ACS data.
+
+```{r}
+names(acs_il)
+acs_il_copy <- acs_il
+acs_il_copy$NAME <- unlist(lapply(strsplit(acs_il_copy$NAME, ','), function(x) x[1]))
+names(acs_il_copy)[names(acs_il_copy) == "NAME"] <-'location'
+
+# Trim white spaces from the location column and 
+# remove the name village and city from the acs_il dataframe
+acs_il_copy$location <- str_trim(str_replace(acs_il_copy$location, 
+                                           "\\s*(village|city)$", ""),
+                                 side = "both")
+acs_il_copy$location <- tolower(acs_il_copy$location)
+acs_il_copy$location <- tolower(acs_il_copy$location)
+freq_res_city_spread$location <- tolower(freq_res_city_spread$location)
+
+
+# Question 1
+cat("No of cities not appearing in both the dataset:\t",
+    nrow(anti_join(acs_il_copy, freq_res_city_spread, 
+                   by = 'location')))
+
+joined_il <- inner_join(freq_res_city_spread, acs_il_copy, 
+                        by = 'location')
+head(joined_il, n = 5)
+
+# Question 2
+
+results <- joined_il %>% 
+  mutate(income_group = if_else(hh_income > median(hh_income), 'high income', 'low income')) %>%
+  group_by(income_group) %>%
+  summarise(mean_crime = mean(crime),
+            mean_loans = mean(loans)) %>%
+  ungroup()
+
+print(results)
+
+# Question 3
+ggplot(joined_il) +
+  geom_point(aes(x = hh_income, y = crime, color = "Crime"), 
+             shape = 16, size = 3) +  
+  geom_point(aes(x = hh_income, y = loans, color = "Loans"), 
+             shape = 17, size = 3) +  
+  labs(x = "Median Household Income", 
+       y = "Search Popularity", 
+       title = "Scatterplot of Median Household Income vs. Search Popularity") +
+  scale_color_manual(name = "Variables", 
+                     values = c("Crime" = "red", "Loans" = "blue")) + 
+  theme_classic()
+```
