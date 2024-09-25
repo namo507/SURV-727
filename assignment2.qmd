@@ -9,7 +9,7 @@ toc: TRUE
 
 You may work in pairs or individually for this assignment. Make sure you join a group in Canvas if you are working in pairs. Turn in this assignment as an HTML or PDF file to ELMS. Make sure to include the R Markdown or Quarto file that was used to generate it.
 
-So firstly we import the necessary libraries.
+So we firstly load the necessary libraries.
 ```{r}
 #| message = FALSE
 library(tidyverse)
@@ -78,8 +78,7 @@ corel <- cor(freq_res_city_spread$crime, freq_res_city_spread$loans)
 cat("The correlation between crime and loan:\t", corel)
 cor.test(freq_res_city_spread$crime, freq_res_city_spread$loans)
 ```
-
-So in Q1's trend, we can see that 
+In Q1's result, we see an interesting pattern from April 2020 to July 2020. In April, there was a huge spike in the search hit of Loan but later on in July, there is a shift in the search hit as we see a spike in Crime.
 
 ## Google Trends + ACS
 
