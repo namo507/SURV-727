@@ -78,7 +78,7 @@ corel <- cor(freq_res_city_spread$crime, freq_res_city_spread$loans)
 cat("The correlation between crime and loan:\t", corel)
 cor.test(freq_res_city_spread$crime, freq_res_city_spread$loans)
 ```
-In Q1's result, we see an interesting pattern from April 2020 to July 2020. In April, there was a huge spike in the search hit of Loan but later on in July, there is a shift in the search hit as we see a spike in Crime.
+In Q1's result, we see an interesting pattern from April 2020 to July 2020. In April, there was a huge spike in the search hit of Loan but later on in July, there is a shift in the search hit as we see a spike in Crime. So the mean for crime and loans is 51.03774 and 62.24528 respectively.
 
 ## Google Trends + ACS
 
