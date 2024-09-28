@@ -78,13 +78,57 @@ corel <- cor(freq_res_city_spread$crime, freq_res_city_spread$loans)
 cat("The correlation between crime and loan:\t", corel)
 cor.test(freq_res_city_spread$crime, freq_res_city_spread$loans)
 ```
-In Q1's result, we see an interesting pattern from April 2020 to July 2020. In April, there was a huge spike in the search hit of Loan but later on in July, there is a shift in the search hit as we see a spike in Crime. So the mean for crime and loans is 51.03774 and 62.24528 respectively.
-
-So we can infer that the results indicated significant variability in search intensity for both terms, with noticeable spikes during certain periods in 2020, reflecting societal events like the pandemic and its economic consequences.
+In Q1's result, we see an interesting pattern from April 2020 to July 2020. In April, there was a huge spike in the search hit of Loan but later on in July, there is a shift in the search hit as we see a spike in Crime. So the mean for crime and loans is 51.03774 and 62.24528 respectively. So we can infer that the results indicated significant variability in search intensity for both terms, with noticeable spikes during certain periods in 2020, reflecting societal events like the pandemic and its economic consequences.
 
 Now by aggregating search hits by location, we identified the cities in Illinois with the highest search frequency for "loans." where Long Lake is in the top. This analysis actually provides insights into the geographic distribution of search interest, revealing patterns in financial behavior across different regions.
 
 Now the correlation between search intensities for "crime" and "loans" after computation, reveals whether increases in one term's search frequency corresponded with changes in the other. A moderately high negative correlation of (-0.81) is observed, suggesting that as search interest in "loans" increased, interest in "crime" slightly decreased.
+
+```{r}
+res2 <- gtrends(c("covid", "vaccine"), 
+               geo = "US-IL", 
+               time = "2020-01-01 2020-12-31", 
+               low_search_volume = TRUE)
+plot(res2)
+```
+```{r fig.height=8, fig.width=12, message=FALSE, warning=FALSE}
+# Question 1
+head(res2$interest_over_time, n = 5)
+sum_res2_all <- res2$interest_over_time %>% group_by(keyword) %>%
+  summarize(mean = mean(hits),
+            median = median(hits),
+            variance = var(hits))
+sum_res_all
+
+# Question 2
+head(res2$interest_by_city, n = 5)
+freq_res2_cities <- res2$interest_by_city %>%select(c(location, keyword, hits))%>%group_by(keyword, location) %>% summarize(total_hits = sum(hits)) %>% ungroup() %>% filter(total_hits > 0) 
+
+head(arrange(freq_res2_cities, desc(total_hits)), n = 10)
+
+freq_res2_city_spread <- spread(freq_res2_cities, key = keyword, value = total_hits)%>% 
+  mutate(across(where(is.numeric), ~ replace_na(.,0)))
+head(freq_res2_city_spread, n = 5)
+freq_res2_city_spread %>% filter(covid > 0 & vaccine > 0)
+
+ggplot(freq_res2_cities, aes(x = location, y = total_hits, fill = keyword))+
+  geom_bar(stat = 'identity', position = 'dodge', color = 'black', width = 0.65)+
+  labs(title = "Total Hits by Location Colored by Keyword",
+       x = "Location", 
+       y = "Total Hits",
+       caption = 'Historgram for cities with search popularity') +
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_fill_brewer(palette = "Set2")
+
+# Question 3
+corel <- cor(freq_res2_city_spread$covid, freq_res2_city_spread$vaccine)
+cat("The correlation between crime and loan:\t", corel)
+cor.test(freq_res2_city_spread$covid, freq_res_city_spread$vaccine)
+```
+So seeing the results, we can say that COVID-related searches were much more frequent and consistent throughout the year, while vaccine searches were less frequent but had higher variability, possibly due to spikes in interest as vaccine development progressed.
+
+Another interesting thing that can be inferred is that larger cities and university towns show the highest search frequencies for both terms, likely due to population size and concentration of health-conscious or academically-oriented residents.
 
 ## Google Trends + ACS
 
