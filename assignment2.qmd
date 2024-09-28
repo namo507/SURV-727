@@ -198,7 +198,17 @@ cor.test(joined_il$hh_income, joined_il$crime)
 
 Now there's a significant mismatch between Google Trends data and ACS data as 1406 cities aren't appearing in both the datasets, which could be due to differences in how locations are defined or reported in each dataset.
 
-Now the scatterplot visualizing the relationship between median household income and search popularity for "crime" and "loans" further underscored these patterns, providing a clear graphical representation of the socio-economic dynamics underlying search behaviors in Illinois.
+Search popularity by income group is given as
+High income:
+Mean crime searches: 31.2
+Mean loans searches: 30.7
+Low income:
+Mean crime searches: 25.4
+Mean loans searches: 45.1
+So we can infer that higher income areas show slightly higher search interest in both crime and loans. This could indicate greater awareness or concern about these issues in more affluent areas, or simply reflect higher internet usage.
+
+The scatter plot shows a slight negative relationship between household income and search popularity for "loan" and a slight positive relationship with keyterm "crime".
+This suggests that as household income increases, interest in loans slightly decreases, possibly due to greater financial literacy or interest in investment opportunities.
 
 ## Solution
 
