@@ -197,7 +197,7 @@ cor.test(joined_il$hh_income, joined_il$crime)
 ```
 So an overall conclusion is that by merging Google Trends data with socio-demographic information from the ACS, we gained a deeper understanding of how search behaviors vary across cities with different economic profiles. The analysis highlighted differences in search frequency for cities with above and below-average median household incomes, revealing that economically disadvantaged areas tended to search more frequently for loans, while wealthier regions had higher search interest in crime-related topics.
 
-Now the scatterplots visualizing the relationship between median household income and search popularity for "crime" and "loans" further underscored these patterns, providing a clear graphical representation of the socio-economic dynamics underlying search behaviors in Illinois.
+Now the scatterplot visualizing the relationship between median household income and search popularity for "crime" and "loans" further underscored these patterns, providing a clear graphical representation of the socio-economic dynamics underlying search behaviors in Illinois.
 
 ## Solution
 
