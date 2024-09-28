@@ -80,6 +80,12 @@ cor.test(freq_res_city_spread$crime, freq_res_city_spread$loans)
 ```
 In Q1's result, we see an interesting pattern from April 2020 to July 2020. In April, there was a huge spike in the search hit of Loan but later on in July, there is a shift in the search hit as we see a spike in Crime. So the mean for crime and loans is 51.03774 and 62.24528 respectively.
 
+So we can infer that the results indicated significant variability in search intensity for both terms, with noticeable spikes during certain periods in 2020, reflecting societal events like the pandemic and its economic consequences.
+
+Now by aggregating search hits by location, we identified the cities in Illinois with the highest search frequency for "loans." where Long Lake is in the top. This analysis actually provides insights into the geographic distribution of search interest, revealing patterns in financial behavior across different regions.
+
+Now the correlation between search intensities for "crime" and "loans" after computation, reveals whether increases in one term's search frequency corresponded with changes in the other. A moderately high negative correlation of (-0.81) is observed, suggesting that as search interest in "loans" increased, interest in "crime" slightly decreased.
+
 ## Google Trends + ACS
 
 Now lets add another data set. The `censusapi` package provides a nice R interface for communicating with this API. However, before running queries we need an access key. This (easy) process can be completed here:
