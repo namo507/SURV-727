@@ -84,51 +84,6 @@ Now by aggregating search hits by location, we identified the cities in Illinois
 
 Now the correlation between search intensities for "crime" and "loans" after computation, reveals whether increases in one term's search frequency corresponded with changes in the other. A moderately high negative correlation of (-0.81) is observed, suggesting that as search interest in "loans" increased, interest in "crime" slightly decreased.
 
-```{r}
-res2 <- gtrends(c("covid", "vaccine"), 
-               geo = "US-IL", 
-               time = "2020-01-01 2020-12-31", 
-               low_search_volume = TRUE)
-plot(res2)
-```
-```{r fig.height=8, fig.width=12, message=FALSE, warning=FALSE}
-# Question 1
-head(res2$interest_over_time, n = 5)
-sum_res2_all <- res2$interest_over_time %>% group_by(keyword) %>%
-  summarize(mean = mean(hits),
-            median = median(hits),
-            variance = var(hits))
-sum_res_all
-
-# Question 2
-head(res2$interest_by_city, n = 5)
-freq_res2_cities <- res2$interest_by_city %>%select(c(location, keyword, hits))%>%group_by(keyword, location) %>% summarize(total_hits = sum(hits)) %>% ungroup() %>% filter(total_hits > 0) 
-
-head(arrange(freq_res2_cities, desc(total_hits)), n = 10)
-
-freq_res2_city_spread <- spread(freq_res2_cities, key = keyword, value = total_hits)%>% 
-  mutate(across(where(is.numeric), ~ replace_na(.,0)))
-head(freq_res2_city_spread, n = 5)
-freq_res2_city_spread %>% filter(covid > 0 & vaccine > 0)
-
-ggplot(freq_res2_cities, aes(x = location, y = total_hits, fill = keyword))+
-  geom_bar(stat = 'identity', position = 'dodge', color = 'black', width = 0.65)+
-  labs(title = "Total Hits by Location Colored by Keyword",
-       x = "Location", 
-       y = "Total Hits",
-       caption = 'Historgram for cities with search popularity') +
-  theme_classic()+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  scale_fill_brewer(palette = "Set2")
-
-# Question 3
-corel <- cor(freq_res2_city_spread$covid, freq_res2_city_spread$vaccine)
-cat("The correlation between crime and loan:\t", corel)
-cor.test(freq_res2_city_spread$covid, freq_res_city_spread$vaccine)
-```
-So seeing the results, we can say that COVID-related searches were much more frequent and consistent throughout the year, while vaccine searches were less frequent but had higher variability, possibly due to spikes in interest as vaccine development progressed.
-
-Another interesting thing that can be inferred is that larger cities and university towns show the highest search frequencies for both terms, likely due to population size and concentration of health-conscious or academically-oriented residents.
 
 ## Google Trends + ACS
 
@@ -240,6 +195,9 @@ ggplot(joined_il) +
 cor.test(joined_il$hh_income, joined_il$loans)
 cor.test(joined_il$hh_income, joined_il$crime)
 ```
+So an overall conclusion is that by merging Google Trends data with socio-demographic information from the ACS, we gained a deeper understanding of how search behaviors vary across cities with different economic profiles. The analysis highlighted differences in search frequency for cities with above and below-average median household incomes, revealing that economically disadvantaged areas tended to search more frequently for loans, while wealthier regions had higher search interest in crime-related topics.
+
+Now the scatterplots visualizing the relationship between median household income and search popularity for "crime" and "loans" further underscored these patterns, providing a clear graphical representation of the socio-economic dynamics underlying search behaviors in Illinois.
 
 ## Solution
 
@@ -323,3 +281,7 @@ ggplot(covid_data_freq, aes(y = hits, x = location, color = keyword)) +
   ) +
   scale_color_viridis_d(option = 'H') 
 ```
+So seeing the results, we can say that COVID-related searches were much more frequent and consistent throughout the year, while vaccine searches were less frequent but had higher variability, possibly due to spikes in interest as vaccine development progressed.
+
+Another interesting thing that can be inferred is that larger cities and university towns show the highest search frequencies for both terms, likely due to population size and concentration of health-conscious or academically-oriented residents.
+
