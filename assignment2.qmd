@@ -187,6 +187,8 @@ ggplot(joined_il) +
   scale_color_manual(name = "Variables", 
                      values = c("Crime" = "red", "Loans" = "blue")) + 
   theme_classic()
+cor.test(joined_il$hh_income, joined_il$loans)
+cor.test(joined_il$hh_income, joined_il$crime)
 ```
 
 ## Solution
