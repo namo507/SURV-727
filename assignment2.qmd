@@ -188,3 +188,86 @@ ggplot(joined_il) +
                      values = c("Crime" = "red", "Loans" = "blue")) + 
   theme_classic()
 ```
+
+## Solution
+
+over here our goal is simple scrape data for covid for the city of illinois for each city, then compare the house hold income in which cities have wore mask or not.
+
+```{r}
+library(tidyverse)
+library(jsonlite)
+library(httr)
+
+url_country <- GET("https://covidmap.umd.edu/api/country")
+response <- content(url_country, as = 'text', type = "UTF-8")
+country_list <- fromJSON(response, flatten = TRUE)$data
+country_list %>%
+  mutate(country = tolower(country)) %>%
+  filter(country == 'united states') %>%
+  pull(country)
+```
+
+Well thats it as we can see there is no united states in the dataset, so lets use the google trends data for covid in usa and for the second variable lets search for say vaccine
+
+```{r}
+library(censusapi)
+library(ggplot2)
+library(tidyr)
+library(gtrendsR)
+covid <- gtrends(c('covid', 'vaccine'),
+                 geo = 'US-IL',
+                 time = "2020-01-01 2020-12-31", 
+                 low_search_volume = TRUE)
+
+plot(covid)
+```
+
+```{r fig.height=20, fig.width=30, warning=FALSE, message=FALSE}
+sum_covid_all <- covid$interest_over_time %>%
+                  group_by(keyword) %>%
+                  mutate(hits = as.numeric(as.character(hits))) %>%
+                  filter(!is.na(hits)) %>%
+                  summarise(mean_hits = mean(hits, na.rm = TRUE),
+                            variance = var(hits, na.rm = TRUE),
+                            median_hits = median(hits, na.rm = TRUE))
+sum_covid_all
+
+
+covid_data_freq <- covid$interest_by_city %>%
+                    select(location, hits, keyword) %>%
+                    mutate(hits = as.numeric(as.character(hits))) %>%
+                    filter(hits>0)
+covid_data_freq_spread <- spread(covid_data_freq, key = keyword, value = hits) %>%
+                            mutate(across(where(is.numeric), ~ replace_na(.,0)))
+
+head(covid_data_freq, n = 5)
+
+covid_both <- covid_data_freq_spread %>% filter(vaccine > 0 & covid > 0)
+head(covid_both, n = 5)
+nrow(covid_both)
+covid_both %>% 
+  arrange(desc(covid)) %>% 
+  head()
+covid_both %>% 
+  arrange(desc(vaccine)) %>% 
+  head()
+covid_both %>% 
+  mutate(avg_hits = (covid+vaccine)/2) %>% 
+  arrange(desc(avg_hits)) %>% 
+  head()
+
+ggplot(covid_data_freq, aes(y = hits, x = location, color = keyword)) +
+  geom_point(position = position_dodge(width = 0.5), size = 5) +
+  labs(
+    title = "Hits by Location Colored by Keyword",
+    x = "Hits",
+    y = "Location",
+    caption = 'Dot plot for cities with search popularity'
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 10),
+    axis.text.y = element_text(size = 12)
+  ) +
+  scale_color_viridis_d(option = 'H') 
+```
