@@ -1,49 +1,48 @@
 ---
 title: "Assignment 2"
+author: "Sagnik Chakravarty & Namit Shrivastava"
 subtitle: "Due at 11:59pm on October 1."
-Name: "Namit Shrivastava and Sagnik Chakravarty_ Group 7"
 format: pdf
 editor: visual
-toc: TRUE
 ---
+
+Github link
+
+Please find our work at the following link Github Link
 
 You may work in pairs or individually for this assignment. Make sure you join a group in Canvas if you are working in pairs. Turn in this assignment as an HTML or PDF file to ELMS. Make sure to include the R Markdown or Quarto file that was used to generate it.
 
-So we firstly load the necessary libraries.
-```{r}
+{r}
 #| message = FALSE
 library(tidyverse)
 library(gtrendsR)
 library(censusapi)
-```
+library(ggplot2)
 
 In this assignment, you will pull from APIs to get data from various data sources and use your data wrangling skills to use them all together. You should turn in a report in PDF or HTML format that addresses all of the questions in this assignment, and describes the data that you pulled and analyzed. You do not need to include full introduction and conclusion sections like a full report, but you should make sure to answer the questions in paragraph form, and include all relevant tables and graphics.
 
-Whenever possible, use piping and `dplyr`. Avoid hard-coding any numbers within the report as much as possible.
+Whenever possible, use piping and dplyr. Avoid hard-coding any numbers within the report as much as possible.
 
-## Pulling from APIs
+Pulling from APIs
 
-Our first data source is the Google Trends API. Suppose we are interested in the search trends for `crime` and `loans` in Illinois in the year 2020. We could find this using the following code:
+Our first data source is the Google Trends API. Suppose we are interested in the search trends for crime and loans in Illinois in the year 2020. We could find this using the following code:
 
-```{r}
+{r}
 res <- gtrends(c("crime", "loans"), 
                geo = "US-IL", 
                time = "2020-01-01 2020-12-31", 
                low_search_volume = TRUE)
 plot(res)
-```
 
 Answer the following questions for the keywords "crime" and "loans".
 
--   Find the mean, median and variance of the search hits for the keywords.
+Find the mean, median and variance of the search hits for the keywords.
 
--   Which cities (locations) have the highest search frequency for `loans`? Note that there might be multiple rows for each city if there were hits for both "crime" and "loans" in that city. It might be easier to answer this question if we had the search hits info for both search terms in two separate variables. That is, each row would represent a unique city.
+Which cities (locations) have the highest search frequency for loans? Note that there might be multiple rows for each city if there were hits for both "crime" and "loans" in that city. It might be easier to answer this question if we had the search hits info for both search terms in two separate variables. That is, each row would represent a unique city.
 
--   Is there a relationship between the search intensities between the two keywords we used?
+Is there a relationship between the search intensities between the two keywords we used?
 
-Repeat the above for keywords related to covid. Make sure you use multiple keywords like we did above. Try several different combinations and think carefully about words that might make sense within this context.
-
-```{r fig.height=8, fig.width=12, message=FALSE, warning=FALSE}
+{r}
 # Question 1
 head(res$interest_over_time, n = 5)
 sum_res_all <- res$interest_over_time %>% group_by(keyword) %>%
@@ -52,18 +51,20 @@ sum_res_all <- res$interest_over_time %>% group_by(keyword) %>%
             variance = var(hits))
 sum_res_all
 
+From the line graph its clear that on average loans has a higher search volume at Illinois between Jan 2020 to Dec 2020, the summary statistics also proves this point as we can see that the mean search volume for loans is greater than that of crime, the median is also higher one thing of note is $\mu_{loans} > median_{loans}$ we can say that loan is right skewed while $\mu_{crime} \approx median_{crime}$ hence crime is symmetrically distributed. The variance on the other hand for loan is much greater than that of crime that is the data is more scattered and they differ highly from the central tendencies
+
+{r fig.height=8, fig.width=12, message=FALSE, warning=FALSE}
 # Question 2
-head(res$interest_by_city, n = 5)
-freq_res_cities <- res$interest_by_city %>%select(c(location, keyword, hits))%>%group_by(keyword, location) %>% summarize(total_hits = sum(hits)) %>% ungroup() %>% filter(total_hits > 0) 
+freq_res_cities <- res$interest_by_city %>%select(c(location, keyword, hits)) %>% filter(hits > 0) 
 
-head(arrange(freq_res_cities, desc(total_hits)), n = 10)
+head(arrange(freq_res_cities, desc(hits)), n = 10)
 
-freq_res_city_spread <- spread(freq_res_cities, key = keyword, value = total_hits)%>% 
+freq_res_city_spread <- spread(freq_res_cities, key = keyword, value = hits)%>% 
   mutate(across(where(is.numeric), ~ replace_na(.,0)))
 head(freq_res_city_spread, n = 5)
-freq_res_city_spread %>% filter(crime > 0 & loans > 0)
+nrow(freq_res_city_spread)
 
-ggplot(freq_res_cities, aes(x = location, y = total_hits, fill = keyword))+
+ggplot(freq_res_cities, aes(x = location, y = hits, fill = keyword))+
   geom_bar(stat = 'identity', position = 'dodge', color = 'black', width = 0.65)+
   labs(title = "Total Hits by Location Colored by Keyword",
        x = "Location", 
@@ -73,33 +74,47 @@ ggplot(freq_res_cities, aes(x = location, y = total_hits, fill = keyword))+
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_fill_brewer(palette = "Set2")
 
+il_both <- freq_res_city_spread %>% filter(crime > 0 & loans > 0)
+nrow(il_both)
+il_both %>% 
+  arrange(desc(crime))
+il_both %>% 
+  arrange(desc(loans))
+il_both %>% 
+  mutate(avg_hits = (crime+loans)/2) %>% 
+  arrange(desc(avg_hits))
+
+As we can see there are 66 cities in Illinois where the keyword loans or crime were searched atleast once, out of those 66 only 6 cities searched for both the keyword crime and loans, we can also see Anna has the highest hit for crime at 100 while Long Lake has the higher for loans at 100, while East Saint Louis city has the highest search volume in crime loans and average number of hits at 75, 87 and 81 respectively where both the keyword has been searched for.
+
+{r}
 # Question 3
 corel <- cor(freq_res_city_spread$crime, freq_res_city_spread$loans)
 cat("The correlation between crime and loan:\t", corel)
 cor.test(freq_res_city_spread$crime, freq_res_city_spread$loans)
-```
-In Q1's result, we see an interesting pattern from April 2020 to July 2020. In April, there was a huge spike in the search hit of Loan but later on in July, there is a shift in the search hit as we see a spike in Crime. So the mean for crime and loans is 51.03774 and 62.24528 respectively. So we can infer that the results indicated significant variability in search intensity for both terms, with noticeable spikes during certain periods in 2020, reflecting societal events like the pandemic and its economic consequences.
 
-Now by aggregating search hits by location, we identified the cities in Illinois with the highest search frequency for "loans." where Long Lake is in the top. This analysis actually provides insights into the geographic distribution of search interest, revealing patterns in financial behavior across different regions.
+ggplot(freq_res_city_spread, aes(crime, loans))+
+  geom_point(color = 'black', alpha = 0.5)+
+  geom_smooth(method = 'lm', color = 'red', se =FALSE)+
+  theme_classic()
 
-Now the correlation between search intensities for "crime" and "loans" after computation, reveals whether increases in one term's search frequency corresponded with changes in the other. A moderately high negative correlation of (-0.81) is observed, suggesting that as search interest in "loans" increased, interest in "crime" slightly decreased.
+We can see that crime and loans keyword are strongly negatively correlated at -0.79, also the correlation test shows that p_value < 0.05 for which we reject $H_0: \rho = 0$ hence we reject $H_0$ at 95% confidence interval and the correlation coefficient lies between -0.89 and -0.67.
 
+Repeat the above for keywords related to covid. Make sure you use multiple keywords like we did above. Try several different combinations and think carefully about words that might make sense within this context.
 
-## Google Trends + ACS
+Google Trends + ACS
 
-Now lets add another data set. The `censusapi` package provides a nice R interface for communicating with this API. However, before running queries we need an access key. This (easy) process can be completed here:
+Now lets add another data set. The censusapi package provides a nice R interface for communicating with this API. However, before running queries we need an access key. This (easy) process can be completed here:
 
-<https://api.census.gov/data/key_signup.html>
+https://api.census.gov/data/key_signup.html
 
-Once you have an access key, save it as a text file, then read this key in the `cs_key` object. We will use this object in all following API queries. Note that I called my text file `census-key.txt` – yours might be different!
+Once you have an access key, save it as a text file, then read this key in the cs_key object. We will use this object in all following API queries. Note that I called my text file census-key.txt – yours might be different!
 
-```{r}
+{r}
 cs_key <- read_file("census-key.txt")
-```
 
-In the following, we request basic socio-demographic information (population, median age, median household income, income per capita) for cities and villages in the state of Illinois. Documentation for the 5-year ACS API can be found here: <https://www.census.gov/data/developers/data-sets/acs-5year.html>. The information about the variables used here can be found here: <https://api.census.gov/data/2022/acs/acs5/variables.html>.
+In the following, we request basic socio-demographic information (population, median age, median household income, income per capita) for cities and villages in the state of Illinois. Documentation for the 5-year ACS API can be found here: https://www.census.gov/data/developers/data-sets/acs-5year.html. The information about the variables used here can be found here: https://api.census.gov/data/2022/acs/acs5/variables.html.
 
-```{r}
+{r}
 if (!require(gtrendsR)) install.packages("censusapi")
 library(censusapi)
 acs_il <- getCensus(name = "acs/acs5",
@@ -113,38 +128,56 @@ acs_il <- getCensus(name = "acs/acs5",
                     regionin = "state:17",
                     key = cs_key)
 head(acs_il)
-```
 
 Convert values that represent missings to NAs.
 
-```{r}
+{r}
 acs_il[acs_il == -666666666] <- NA
-```
 
-Now, it might be useful to rename the socio-demographic variables (`B01001_001E` etc.) in our data set and assign more meaningful names.
+Now, it might be useful to rename the socio-demographic variables (B01001_001E etc.) in our data set and assign more meaningful names.
 
-```{r}
+{r}
 acs_il <-
   acs_il %>%
   dplyr :: rename(pop = B01001_001E, 
          age = B06002_001E, 
          hh_income = B19013_001E, 
          income = B19301_001E)
-```
+head(acs_il, n = 5)
 
-It seems like we could try to use this location information listed above to merge this data set with the Google Trends data. However, we first have to clean `NAME` so that it has the same structure as `location` in the search interest by city data. Add a new variable `location` to the ACS data that only includes city names.
+It seems like we could try to use this location information listed above to merge this data set with the Google Trends data. However, we first have to clean NAME so that it has the same structure as location in the search interest by city data. Add a new variable location to the ACS data that only includes city names.
 
 Answer the following questions with the "crime" and "loans" Google trends data and the ACS data.
 
--   First, check how many cities don't appear in both data sets, i.e. cannot be matched. Then, create a new data set by joining the Google Trends and the ACS data. Keep only cities that appear in both data sets.
+First, check how many cities don't appear in both data sets, i.e. cannot be matched. Then, create a new data set by joining the Google Trends and the ACS data. Keep only cities that appear in both data sets.
 
--   Compute the mean of the search popularity for both keywords for cities that have an above average median household income and for those that have an below average median household income. When building your pipe, start with creating the grouping variable and then proceed with the remaining tasks. What conclusions might you draw from this?
+Compute the mean of the search popularity for both keywords for cities that have an above average median household income and for those that have an below average median household income. When building your pipe, start with creating the grouping variable and then proceed with the remaining tasks. What conclusions might you draw from this?
 
--   Is there a relationship between the median household income and the search popularity of the Google trends terms? Describe the relationship and use a scatterplot with `qplot()`.
+Is there a relationship between the median household income and the search popularity of the Google trends terms? Describe the relationship and use a scatterplot with qplot().
 
-Repeat the above steps using the covid data and the ACS data.
+q1 <- qplot(hh_income, crime, data = joined_il,
 
-```{r}
+color = I("red"), shape = I(16), size = I(3),
+
+xlab = "Median Household Income",
+
+ylab = "Search Popularity",
+
+main = "Scatterplot of Median Household Income vs. Search Popularity")
+
+# Overlay the scatterplot for loans
+
+q2 <- qplot(hh_income, loans, data = joined_il,
+
+color = I("blue"), shape = I(17), size = I(3),
+
+add = TRUE)
+
+# Print the combined plot
+
+print(q1 + q2)
+
+{r}
 names(acs_il)
 acs_il_copy <- acs_il
 acs_il_copy$NAME <- unlist(lapply(strsplit(acs_il_copy$NAME, ','), function(x) x[1]))
@@ -156,10 +189,11 @@ acs_il_copy$location <- str_trim(str_replace(acs_il_copy$location,
                                            "\\s*(village|city)$", ""),
                                  side = "both")
 acs_il_copy$location <- tolower(acs_il_copy$location)
-acs_il_copy$location <- tolower(acs_il_copy$location)
 freq_res_city_spread$location <- tolower(freq_res_city_spread$location)
 
+Before starting we will be doing some pre processing we changed the name of the column to NAME to location to facilitate joining, we also removed the illinois after the city name, and removed any leading or trailing white space along with "village" or "city" from the names, then we made the city name in both dataset in lower case.
 
+{r}
 # Question 1
 cat("No of cities not appearing in both the dataset:\t",
     nrow(anti_join(acs_il_copy, freq_res_city_spread, 
@@ -169,10 +203,13 @@ joined_il <- inner_join(freq_res_city_spread, acs_il_copy,
                         by = 'location')
 head(joined_il, n = 5)
 
+There are 1403 cities which appears in the Census data but not in the google trend data where atleast the keyword crime or loans where searched atleast once. the dataset joined_il contains the dataset after joining both the dataset using location as the primary key.
+
+{r}
 # Question 2
 
 results <- joined_il %>% 
-  mutate(income_group = if_else(hh_income > median(acs_il$hh_income, na.rm = TRUE), 'high income', 'low income')) %>%
+  mutate(income_group = if_else(hh_income > median(acs_il$hh_income, na.rm =TRUE), 'high income', 'low income')) %>%
   group_by(income_group) %>%
   summarise(mean_crime = mean(crime),
             mean_loans = mean(loans)) %>%
@@ -180,6 +217,9 @@ results <- joined_il %>%
 
 print(results)
 
+We can see that the mean crime at location with income higher than that of the median household income at all the states comes out as 34.4 and that of loan is 34.89 which are surprisingly very close, while the in the lower income area search for loan is more than search for crime at 46.63 and 32.25 respectively
+
+{r}
 # Question 3
 ggplot(joined_il) +
   geom_point(aes(x = hh_income, y = crime, color = "Crime"), 
@@ -192,29 +232,17 @@ ggplot(joined_il) +
   scale_color_manual(name = "Variables", 
                      values = c("Crime" = "red", "Loans" = "blue")) + 
   theme_classic()
+
 cor.test(joined_il$hh_income, joined_il$loans)
 cor.test(joined_il$hh_income, joined_il$crime)
-```
 
-Now there's a significant mismatch between Google Trends data and ACS data as 1406 cities aren't appearing in both the datasets, which could be due to differences in how locations are defined or reported in each dataset.
+Repeat the above steps using the covid data and the ACS data.
 
-Search popularity by income group is given as
-High income:
-Mean crime searches: 31.2
-Mean loans searches: 30.7
-Low income:
-Mean crime searches: 25.4
-Mean loans searches: 45.1
-So we can infer that higher income areas show slightly higher search interest in both crime and loans. This could indicate greater awareness or concern about these issues in more affluent areas, or simply reflect higher internet usage.
-
-The scatter plot shows a slight negative relationship between household income and search popularity for "loan" and a slight positive relationship with keyterm "crime".
-This suggests that as household income increases, interest in loans slightly decreases, possibly due to greater financial literacy or interest in investment opportunities.
-
-## Solution
+Solution
 
 over here our goal is simple scrape data for covid for the city of illinois for each city, then compare the house hold income in which cities have wore mask or not.
 
-```{r}
+{r}
 library(tidyverse)
 library(jsonlite)
 library(httr)
@@ -226,11 +254,10 @@ country_list %>%
   mutate(country = tolower(country)) %>%
   filter(country == 'united states') %>%
   pull(country)
-```
 
-Well thats it as we can see there is no united states in the dataset, so lets use the google trends data for covid in usa and for the second variable lets search for say vaccine
+Well thats it as we can see there is no united states in the covid dataset, so lets use the google trends data for covid in usa and for the second variable lets search for say vaccine as its related to covid i feel like.
 
-```{r}
+{r}
 library(censusapi)
 library(ggplot2)
 library(tidyr)
@@ -241,9 +268,10 @@ covid <- gtrends(c('covid', 'vaccine'),
                  low_search_volume = TRUE)
 
 plot(covid)
-```
 
-```{r fig.height=20, fig.width=30, warning=FALSE, message=FALSE}
+From the line chart we can see that covid has been searched way more than vaccine, which is as expected since 2020 is the hay days of covid, but in closer inspection we see that the trend of covid and vaccine are very similar when ever there is more interest in covid we have a proportional interest in vaccine, but the search for vaccine really started to have some steam as we were closer to the end of the year.
+
+{r warning = FALSE, message=FALSE}
 sum_covid_all <- covid$interest_over_time %>%
                   group_by(keyword) %>%
                   mutate(hits = as.numeric(as.character(hits))) %>%
@@ -253,19 +281,32 @@ sum_covid_all <- covid$interest_over_time %>%
                             median_hits = median(hits, na.rm = TRUE))
 sum_covid_all
 
+We can see that covid has be searched way more and the data is spread way more than the search for vaccine from the mean median and variance, over here mean<median for covid suggesting a left skewdness in the dataset, but for vaccine mean is very close to median which suggest a symmetric distribution
 
+{r}
 covid_data_freq <- covid$interest_by_city %>%
                     select(location, hits, keyword) %>%
                     mutate(hits = as.numeric(as.character(hits))) %>%
                     filter(hits>0)
 covid_data_freq_spread <- spread(covid_data_freq, key = keyword, value = hits) %>%
                             mutate(across(where(is.numeric), ~ replace_na(.,0)))
-
 head(covid_data_freq, n = 5)
+nrow(covid_data_freq)
+
+covid_data_freq %>%
+  filter(keyword == 'covid') %>%
+  arrange(desc(hits)) %>%
+  head(n = 2)
+
+covid_data_freq %>%
+  filter(keyword == 'vaccine') %>%
+  arrange(desc(hits)) %>%
+  head(n = 2)
 
 covid_both <- covid_data_freq_spread %>% filter(vaccine > 0 & covid > 0)
 head(covid_both, n = 5)
 nrow(covid_both)
+
 covid_both %>% 
   arrange(desc(covid)) %>% 
   head()
@@ -277,6 +318,9 @@ covid_both %>%
   arrange(desc(avg_hits)) %>% 
   head()
 
+We can see that there are 266 places which have searched for atleast Covid or vaccine on which 58 have searched for both the keyword Bartelso has the highest search for Covid while Hurst has the highest search for vaccine and also the place where Covid was searched atleast once, while Oak Lawn being the place with highest search for Covid where vaccine was also searched atleast once, Hurst still comes on top when it comes to the highest place with more average Covid and vaccine search
+
+{r fig.height=20, fig.width=30, warning=FALSE, message=FALSE}
 ggplot(covid_data_freq, aes(y = hits, x = location, color = keyword)) +
   geom_point(position = position_dodge(width = 0.5), size = 5) +
   labs(
@@ -291,8 +335,37 @@ ggplot(covid_data_freq, aes(y = hits, x = location, color = keyword)) +
     axis.text.y = element_text(size = 12)
   ) +
   scale_color_viridis_d(option = 'H') 
-```
-So seeing the results, we can say that COVID-related searches were much more frequent and consistent throughout the year, while vaccine searches were less frequent but had higher variability, possibly due to spikes in interest as vaccine development progressed.
 
-Another interesting thing that can be inferred is that larger cities and university towns show the highest search frequencies for both terms, likely due to population size and concentration of health-conscious or academically-oriented residents.
+{r}
+covid_both$location <- tolower(covid_both$location)
+joined_covid <- inner_join(acs_il_copy, covid_both,
+                           by = 'location')
+nrow(joined_covid)
 
+results_covid <- joined_covid %>% 
+  mutate(income_group = if_else(hh_income > median(acs_il$hh_income, na.rm =TRUE), 'high income', 'low income')) %>%
+  group_by(income_group) %>%
+  summarise(mean_covid = mean(covid),
+            mean_vaccine = mean(vaccine)) %>%
+  ungroup()
+
+print(results_covid)
+
+
+ggplot(joined_covid) +
+  geom_point(aes(x = hh_income, y = covid, color = "Covid"), 
+             shape = 16, size = 3) +  
+  geom_point(aes(x = hh_income, y = vaccine, color = "Vaccine"), 
+             shape = 17, size = 3) +  
+  labs(x = "Median Household Income", 
+       y = "Search Popularity", 
+       title = "Scatterplot of Median Household Income vs. Search Popularity") +
+  scale_color_manual(name = "Variables", 
+                     values = c("Covid" = "red", "Vaccine" = "blue")) + 
+  theme_classic()
+
+cor.test(covid_data_freq_spread$covid, covid_data_freq_spread$vaccine)
+cor.test(joined_covid$hh_income, joined_covid$covid)
+cor.test(joined_covid$hh_income, joined_covid$vaccine)
+
+From the correlation test we can see that the p value for test where we test covid and vaccine with house hold income both comes out as greater than 0.05 hence we failed to reject H0 at 95% confidence intereval therefore the correlation between both vaccine and household income and covid and household income is 0, while we can see that the correlation between vaccine and covid are statistically significant hence both have a negetive correlation of -0.42. We can observe that covid has been searched way more than vaccine irrespective of income than vaccine but still in high income covid was searched the most, vaccination search was least in the high income and highest in the lower income region
