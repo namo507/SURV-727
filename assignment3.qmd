@@ -11,6 +11,7 @@ github link: [GitHub Link](https://github.com/namo507/SURV-727)
 
 You may work in pairs or individually for this assignment. Make sure you join a group in Canvas if you are working in pairs. Turn in this assignment as an HTML or PDF file to ELMS. Make sure to include the R Markdown or Quarto file that was used to generate it. Include the GitHub link for the repository containing these files.
 
+So first let's load the necessary libraries
 ```{r}
 library(xml2)
 library(rvest)
@@ -61,6 +62,9 @@ census_table <- find_census_table(tables)[[1]]
 census_table %>% select(,-3) %>%
   slice(-11,) %>% kable(.,type='latex')
 ```
+Write so a brief breakdown of what this code is trying to do. It first checks if the website's paths are accessible using the paths_allowed() function. If the URL is accessible, it reads the HTML content of the page and extracts all tables using the read_html() and html_table() functions. Then, the function find_census_table() filters these tables to locate the one that includes "Census" in the column names. 
+
+Finally, we wrote the code such that it selects the relevant table, removes the third column, excludes the eleventh row, and formats the table in LaTeX format using the kable() function for further analysis.
 
 ## Expanding to More Pages
 
@@ -82,6 +86,9 @@ east_sides <- place_adj$X3
 east_sides <- string_mani(east_sides)
 print(east_sides, type = 'latex')
 ```
+This code snippet that we wrote, targets the task of obtaining community areas east of Grand Boulevard, Chicago, from a Wikipedia table. Firstly we see that it defines a function, string_mani, to replace spaces with underscores in the given input strings. It then accesses and processes the fourth table (tables[[4]]) to extract the community areas. This involves removing the second and fourth rows, followed by retrieving and transforming the entries in the third column to have underscores in place of spaces using the string_mani function. 
+
+Finally, we print these transformed community areas as a LaTeX character vector for further use in a looping mechanism that aims to extract population tables from Wikipedia pages of these areas.
 
 Build a small loop to test whether you can build valid urls using the vector of places and pasting each element of it after `https://en.wikipedia.org/wiki/` in a for loop. Calling `url` shows the last url of this loop, which should be `https://en.wikipedia.org/wiki/Hyde_Park,_Chicago`.
 
@@ -138,6 +145,12 @@ colnames(pops) <- c('Census', gsub(',_Chicago','',pop_col_name))
 pops <- pops %>% arrange(as.numeric(Census))
 kable(pops, type='latex')
 ```
+
+Ok, so in a nutshell, we coded such that, firstly it constructs URLs for each community area east of Grand Boulevard by pasting them after https://en.wikipedia.org/wiki/, testing their validity, and scraping the population tables from these pages. It then cleans the extracted tables by removing unnecessary columns and rows, and prepares them for merging. 
+
+Next, we defined a function to extract relevant census data, then, applied this function to the cleaned tables, and combined the results into one consolidated table (pops). 
+
+Finally, we updated column names to match the community areas and arranged the table by census data. This creates a comprehensive dataset of population figures across multiple community areas in Chicago. 
 
 ## Scraping and Analyzing Text Data
 
@@ -204,3 +217,8 @@ tidy_page %>%
   geom_col() +
   labs(y = NULL)
 ```
+
+Right! so in this part of the code, again, we focussed on extracting and analyzing the textual content from Wikipedia pages for various Chicago community areas. Firstly, the code retrieves the main descriptive text from each page, ensuring it excludes peripheral information such as headers or sidebars. 
+This text is compiled into a dataframe, with columns for the community area name and the descriptive text. Then, using the tidytext package, the text is tokenized to create a one-word-per-row format and is cleaned by removing common stop words. 
+
+Finally, the code identifies the most frequently used words across all descriptions and visualizes these in a bar plot. This in turn offers deeper insights into the features of each community area by assisting in the comprehension of say, recurring themes and variations in the way each is described.
