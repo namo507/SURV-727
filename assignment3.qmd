@@ -1,0 +1,206 @@
+---
+title: "Assignment 3"
+subtitle: "Due at 11:59pm on October 15."
+output: 
+  pdf_document:
+    latex_engine: xelatex 
+editor: visual
+---
+
+github link: [GitHub Link](https://github.com/namo507/SURV-727)
+
+You may work in pairs or individually for this assignment. Make sure you join a group in Canvas if you are working in pairs. Turn in this assignment as an HTML or PDF file to ELMS. Make sure to include the R Markdown or Quarto file that was used to generate it. Include the GitHub link for the repository containing these files.
+
+```{r}
+library(xml2)
+library(rvest)
+library(tidyverse)
+library(robotstxt)
+library(knitr)
+library(dplyr)
+library(kableExtra)
+```
+
+## Web Scraping
+
+In this assignment, your task is to scrape some information from Wikipedia. We start with the following page about Grand Boulevard, a Chicago Community Area.
+
+<https://en.wikipedia.org/wiki/Grand_Boulevard,_Chicago>
+
+The ultimate goal is to gather the table "Historical population" and convert it to a `data.frame`.
+
+As a first step, read in the html page as an R object. Extract the tables from this object (using the `rvest` package) and save the result as a new object. Follow the instructions if there is an error. Use `str()` on this new object -- it should be a list. Try to find the position of the "Historical population" in this list since we need it in the next step.
+
+Extract the "Historical population" table from the list and save it as another object. You can use subsetting via `[[…]]` to extract pieces from a list. Print the result.
+
+You will see that the table needs some additional formatting. We only want rows and columns with actual values (I called the table object `pop`).
+
+```{r}
+url <- "https://en.wikipedia.org/wiki/Grand_Boulevard,_Chicago"
+
+
+if(paths_allowed(url) == TRUE){
+  table_url <- read_html(url)
+  tables <- html_table(table_url)
+}
+
+
+find_census_table <- function(tables) {
+  Filter(Negate(is.null), lapply(tables, function(tbl) {
+    if (any(grepl("Census", 
+                  gsub("\\s+", "", colnames(tbl)), 
+                  ignore.case = TRUE))) {
+      return(tbl)
+    } else {
+      return(NULL)
+    }
+  }))
+}
+
+census_table <- find_census_table(tables)[[1]]
+census_table %>% select(,-3) %>%
+  slice(-11,) %>% kable(.,type='latex')
+```
+
+## Expanding to More Pages
+
+That's it for this page. However, we may want to repeat this process for other community areas. The Wikipedia page https://en.wikipedia.org/wiki/Grand_Boulevard,\_Chicago has a section on "Places adjacent to Grand Boulevard, Chicago" at the bottom. Can you find the corresponding table in the list of tables that you created earlier? Extract this table as a new object.
+
+Then, grab the community areas east of Grand Boulevard and save them as a character vector. Print the result.
+
+We want to use this list to create a loop that extracts the population tables from the Wikipedia pages of these places. To make this work and build valid urls, we need to replace empty spaces in the character vector with underscores. This can be done with `gsub()`, or by hand. The resulting vector should look like this: "Oakland,\_Chicago" "Kenwood,\_Chicago" "Hyde_Park,\_Chicago"
+
+To prepare the loop, we also want to copy our `pop` table and rename it as `pops`. In the loop, we append this table by adding columns from the other community areas.
+
+```{r}
+string_mani <- function(x){
+  return(gsub(' ', '_', unlist(x, use.names = FALSE)))
+}
+place_adj <- tables[[4]]
+place_adj <- place_adj[-c(2,4),]
+east_sides <- place_adj$X3
+east_sides <- string_mani(east_sides)
+print(east_sides, type = 'latex')
+```
+
+Build a small loop to test whether you can build valid urls using the vector of places and pasting each element of it after `https://en.wikipedia.org/wiki/` in a for loop. Calling `url` shows the last url of this loop, which should be `https://en.wikipedia.org/wiki/Hyde_Park,_Chicago`.
+
+```{r}
+base_url <- "https://en.wikipedia.org/wiki/"
+east_sides_tables <- list(census_table)
+
+for(i in 1:length(east_sides)){
+  place_url <- paste0(base_url, east_sides[i], sep = '')
+  if(paths_allowed(place_url) == TRUE){
+    html_url <- read_html(place_url)
+    east_tbl <- html_table(html_url)
+    east_sides_tables[[i+1]] = find_census_table(east_tbl)[[1]]
+  }
+  else{
+    print('Invalid URL')
+  }
+}
+
+print(place_url)
+```
+
+```{r}
+df_cleaned <- function(ltbl){
+  n <- length(ltbl)
+  df <- list()
+  for(i in 1:n){
+    df[[i]] <- ltbl[[i]][,-3]
+    df[[i]] <- df[[i]][-nrow(df[[i]]),]
+  } 
+  return(df)
+}
+
+east_sides_tables <- df_cleaned(east_sides_tables)
+print(east_sides_tables, type = 'latex')
+```
+
+Finally, extend the loop and add the code that is needed to grab the population tables from each page. Add columns to the original table `pops` using `cbind()`.
+
+```{r}
+extract_census_pop <- function(tbl) {
+  tbl %>%
+    select(Census, Pop.) %>%
+    mutate(Pop. = as.numeric(gsub(",", "", Pop.)))
+}
+
+tables_list_clean <- lapply(east_sides_tables, 
+                            extract_census_pop)
+
+pops <- Reduce(function(x, y) full_join(x, y, by = "Census"), 
+                         tables_list_clean)
+pop_col_name <- c("Grand_Boulevard,_Chicago",east_sides)
+colnames(pops) <- c('Census', gsub(',_Chicago','',pop_col_name))
+pops <- pops %>% arrange(as.numeric(Census))
+kable(pops, type='latex')
+```
+
+## Scraping and Analyzing Text Data
+
+Suppose we wanted to take the actual text from the Wikipedia pages instead of just the information in the table. Our goal in this section is to extract the text from the body of the pages, then do some basic text cleaning and analysis.
+
+First, scrape just the text without any of the information in the margins or headers. For example, for "Grand Boulevard", the text should start with, "**Grand Boulevard** on the [South Side](https://en.wikipedia.org/wiki/South_Side,_Chicago "South Side, Chicago") of [Chicago](https://en.wikipedia.org/wiki/Chicago "Chicago"), [Illinois](https://en.wikipedia.org/wiki/Illinois "Illinois"), is one of the ...". Make sure all of the text is in one block by using something like the code below (I called my object `description`).
+
+```{r}
+path_nodes <- html_elements(table_url, xpath ="//p")
+path_names <- html_text(path_nodes)
+print(path_names[2])
+```
+
+Using a similar loop as in the last section, grab the descriptions of the various communities areas. Make a tibble with two columns: the name of the location and the text describing the location.
+
+Let's clean the data using `tidytext`. If you have trouble with this section, see the example shown in <https://www.tidytextmining.com/tidytext.html>
+
+```{r}
+library(tidytext)
+path_names <- list()
+all_path_names <- list()
+for(i in 1:length(pop_col_name)){
+  path_url <- paste0(base_url, pop_col_name[i], sep ='')
+  path_html <- read_html(path_url)
+  p_nodes <- html_elements(path_html, xpath = '//p')
+  path_names[[i]] <- html_text(p_nodes)[[2]]
+  all_path_names[[i]] <- html_text(p_nodes)
+}
+
+desc_df <- data.frame(name = gsub('_|,_Chicago', '', pop_col_name),
+           description = do.call(rbind, path_names))
+kable(desc_df, type = 'latex')
+```
+
+Create tokens using `unnest_tokens`. Make sure the data is in one-token-per-row format. Remove any stop words within the data. What are the most common words used overall?
+
+```{r}
+combined_df <- data.frame(text = unlist(all_path_names), 
+                          stringsAsFactors = FALSE)
+combined_tibble <- tibble(line = 1:nrow(combined_df), 
+                             text = combined_df$text)
+tokenized_tibble <- combined_tibble %>%
+  unnest_tokens(word, text)
+
+data("stop_words")
+tidy_page <- tokenized_tibble %>%
+  anti_join(stop_words)
+cat("The number of words reduced: ", 
+    nrow(tokenized_tibble)-nrow(tidy_page))
+tidy_page %>%
+  count(word, sort = TRUE)
+```
+
+Plot the most common words within each location. What are some of the similarities between the locations? What are some of the differences?
+
+```{r}
+library(ggplot2)
+
+tidy_page %>%
+  count(word, sort = TRUE) %>%
+  filter(n > 10) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col() +
+  labs(y = NULL)
+```
