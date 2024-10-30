@@ -1,6 +1,6 @@
 ---
 title: "Assignment 4"
-author: "Sagnik Chakravarty and Namit Shrivastava"
+author: "Namit Shrivastava"
 subtitle: "Due at 11:59pm on November 5."
 format: pdf
 editor: visual
@@ -10,6 +10,7 @@ Github link: <https://github.com/namo507/SURV-727>
 
 This is an individual assignment. Turn in this assignment as an HTML or PDF file to ELMS. Make sure to include the R Markdown or Quarto file that was used to generate it. Include the GitHub link for the repository containing these files.
 
+So firstly let me load all the necessary libraries.
 ```{r}
 #| include: false 
 library(tidyverse)
@@ -27,13 +28,13 @@ Go to <https://console.cloud.google.com> and make sure you are logged in a non-u
 After you have initialized a project, paste your project ID into the following chunk.
 
 ```{r}
-project <- "surv-727-ass4"
+project <- "e-copilot-439518-a6"
 ```
 
 We will connect to a public database, the Chicago crime database, which has data on crime in Chicago.
 
 ```{r}
-bq_auth(email = 'sagnikchakravarty7@gmail.com')
+bq_auth(email = 'nimminamo2024@gmail.com')
 con <- dbConnect(
   bigrquery::bigquery(),
   project = "bigquery-public-data",
