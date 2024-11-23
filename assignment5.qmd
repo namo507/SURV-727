@@ -85,31 +85,30 @@ Plot the dendrogram to find a reasonable number of clusters. Draw boxes around t
 # Now we perform the hierarchical clustering
 hc <- hclust(dist_matrix, method = "ward.D2")
 
-# Then plotting dendrogram
+# Then plotting the dendrogram
 plot(hc)
 rect.hclust(hc, k = 4, border = "red")
 ```
 
-
 Visualize the county clusters on a map. For this task, create a new `acs_map` object that now also includes cluster membership as a new column. This column should be called `cluster`.
+
+```{r}
+# First we will add cluster membership to data
+acs_map$cluster <- cutree(hc, k = 4)[match(acs_map$subregion, 
+                                          tolower(gsub(" County, Illinois", "", acs_il_c$NAME)))]
+
+# Plot clusters on map
+ggplot(acs_map) + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = as.factor(cluster))) +
+  scale_fill_brewer(palette = "Set3") +
+  theme_minimal() +
+  labs(title = "County Clusters in Illinois",
+       fill = "Cluster")
+```
 
 ## Census Tracts
 
 For the next section we need ACS data on a census tract level. We use the same variables as before.
-
-```{r}
-# acs_il_t <- getCensus(name = "acs/acs5",
-#                     vintage = 2016, 
-#                     vars = c("NAME", "B01003_001E", "B19013_001E", "B19301_001E"),
-#                     region = "tract:*", 
-#                     regionin = "state:17",
-#                     key = cs_key) %<>%
-#             mutate_all(funs(ifelse(.==-666666666, NA, .))) %>%
-#             rename(pop = B01003_001E, 
-#                    hh_income = B19013_001E, 
-#                    income = B19301_001E)
-# head(acs_il_t)
-```
 
 ## k-Means
 
@@ -117,12 +116,54 @@ As before, clean our data for clustering census tracts based on population, aver
 
 Since we want to use K Means in this section, we start by determining the optimal number of K that results in Clusters with low within but high between variation. Plot within cluster sums of squares for a range of K (e.g. up to 20).
 
+```{r}
+# Getting the census tract data
+acs_il_t <- getCensus(name = "acs/acs5",
+                    vintage = 2016, 
+                    vars = c("NAME", "B01003_001E", "B19013_001E", "B19301_001E"),
+                    region = "tract:*", 
+                    regionin = "state:17",
+                    key = cs_key) %>%
+            mutate_all(~ifelse(.==-666666666, NA, .)) %>%
+            rename(pop = B01003_001E, 
+                   hh_income = B19013_001E, 
+                   income = B19301_001E)
+
+# So firstly we clean and scale data for k-means
+tract_clean <- acs_il_t %>%
+  select(pop, hh_income, income) %>%
+  drop_na() %>%
+  scale()
+
+# Now plotting elbow curve
+fviz_nbclust(tract_clean, kmeans, method = "wss", k.max = 20)
+```
+
 Run `kmeans()` for the optimal number of clusters based on the plot above.
 
 Find the mean population, household income and per capita income grouped by clusters. In addition, display the most frequent county that can be observed within each cluster.
+```{r}
+# Defining a function for k-means clustering
+kmeans_cluster <- function(k) {
+  kmeans(tract_clean, centers = k, nstart = 25)
+}
+
+# Applying k-means for different k values
+k_values <- 2:10
+cluster_results <- map(k_values, kmeans_cluster)
+
+# Now adding cluster memberships to original data
+for(i in seq_along(k_values)) {
+  acs_il_t[paste0("cluster_k", k_values[i])] <- 
+    cluster_results[[i]]$cluster[row.names(tract_clean)]
+}
+```
 
 As you might have seen earlier, it's not always clear which number of clusters is the optimal choice. To automate K Means clustering, program a function based on `kmeans()` that takes K as an argument. You can fix the other arguments, e.g. such that a specific dataset is always used when calling the function.
 
 We want to utilize this function to iterate over multiple Ks (e.g., K = 2, ..., 10) and -- each time -- add the resulting cluster membership as a new variable to our (cleaned) original data frame (`acs_il_t`). There are multiple solutions for this task, e.g. think about the `apply` family or `for` loops.
 
 Finally, display the first rows of the updated data set (with multiple cluster columns).
+```{r}
+head(acs_il_t)
+```
