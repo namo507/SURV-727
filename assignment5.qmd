@@ -43,6 +43,14 @@ head(il_map)
 ```
 Join the ACS data with the map data. Not that `il_map` has a column `subregion` which includes county names. We need a corresponding variable in the ACS data to join both data sets. This needs some transformations, among which the function `tolower()` might be useful. Call the joined data `acs_map`.
 
+```{r}
+# Now we will process county names in ACS data
+acs_il_c$county <- tolower(gsub(" County, Illinois", "", acs_il_c$NAME))
+
+# Then joining the data
+acs_map <- left_join(il_map, acs_il_c, by = c("subregion" = "county"))
+```
+
 After you do this, plot a map of Illinois with Counties colored by per capita income.
 
 ```{r}
