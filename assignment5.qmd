@@ -1,5 +1,6 @@
 ---
 title: "Assignment 5"
+author: "Sagnik Chakravarty & Namit Shrivastava"
 subtitle: "Due at 11:59pm on November 26."
 format: pdf
 editor: visual
@@ -8,10 +9,10 @@ editor: visual
 You may work in pairs or individually for this assignment. Make sure you join a group in Canvas if you are working in pairs. Turn in this assignment as an HTML or PDF file to ELMS. Make sure to include the R Markdown or Quarto file that was used to generate it. Include the GitHub link for the repository containing these files.
 
 ```{r}
-# library(censusapi)
-# library(tidyverse)
-# library(magrittr)
-# library(factoextra)
+library(censusapi)
+library(tidyverse)
+library(magrittr)
+library(factoextra)
 ```
 
 ## Exploring ACS Data
@@ -21,25 +22,25 @@ In this notebook, we use the Census API to gather data from the American Communi
 https://api.census.gov/data/key_signup.html
 
 ```{r}
-# acs_il_c <- getCensus(name = "acs/acs5",
-#                     vintage = 2016,
-#                     vars = c("NAME", "B01003_001E", "B19013_001E", "B19301_001E"),
-#                     region = "county:*",
-#                     regionin = "state:17",
-#                     key = cs_key) %>%
-#             rename(pop = B01003_001E, 
-#                    hh_income = B19013_001E, 
-#                    income = B19301_001E)
-# head(acs_il_c)
+cs_key <- "b5093ce161938549eb4486699cb4cac1816be887"
+acs_il_c <- getCensus(name = "acs/acs5",
+                    vintage = 2016,
+                    vars = c("NAME", "B01003_001E", "B19013_001E", "B19301_001E"),
+                    region = "county:*",
+                    regionin = "state:17",
+                    key = cs_key) %>%
+            rename(pop = B01003_001E, 
+                   hh_income = B19013_001E, 
+                   income = B19301_001E)
+head(acs_il_c)
 ```
 
 Pull map data for Illinois into a data frame.
 
 ```{r}
-# il_map <- map_data("county", region = "illinois")
-# head(il_map)
+il_map <- map_data("county", region = "illinois")
+head(il_map)
 ```
-
 Join the ACS data with the map data. Not that `il_map` has a column `subregion` which includes county names. We need a corresponding variable in the ACS data to join both data sets. This needs some transformations, among which the function `tolower()` might be useful. Call the joined data `acs_map`.
 
 After you do this, plot a map of Illinois with Counties colored by per capita income.
