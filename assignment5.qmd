@@ -68,7 +68,28 @@ ggplot(acs_map) +
 
 We want to find clusters of counties that are similar in their population, average household income and per capita income. First, clean the data so that you have the appropriate variables to use for clustering. Next, create the distance matrix of the cleaned data. This distance matrix can be used to cluster counties, e.g. using the ward method.
 
+```{r}
+# Preparing the data for clustering
+cluster_data <- acs_il_c %>%
+  select(pop, hh_income, income) %>%
+  scale()
+
+# Now creating distance matrix
+dist_matrix <- dist(cluster_data)
+```
+
+
 Plot the dendrogram to find a reasonable number of clusters. Draw boxes around the clusters of your cluster solution.
+
+```{r}
+# Now we perform the hierarchical clustering
+hc <- hclust(dist_matrix, method = "ward.D2")
+
+# Then plotting dendrogram
+plot(hc)
+rect.hclust(hc, k = 4, border = "red")
+```
+
 
 Visualize the county clusters on a map. For this task, create a new `acs_map` object that now also includes cluster membership as a new column. This column should be called `cluster`.
 
