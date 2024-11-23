@@ -54,10 +54,14 @@ acs_map <- left_join(il_map, acs_il_c, by = c("subregion" = "county"))
 After you do this, plot a map of Illinois with Counties colored by per capita income.
 
 ```{r}
-#| fig.height = 6.5, fig.width = 6
+| fig.height = 6.5, fig.width = 6
 
-# ggplot(acs_map) + 
-# geom_polygon(aes(x = long, y = lat, group = group, fill = income))
+ggplot(acs_map) + 
+  geom_polygon(aes(x = long, y = lat, group = group, fill = income)) +
+  scale_fill_viridis_c() +
+  theme_minimal() +
+  labs(title = "Per Capita Income by County in Illinois",
+       fill = "Income ($)")
 ```
 
 ## Hierarchical Clustering
