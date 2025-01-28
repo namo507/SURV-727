@@ -1,0 +1,43 @@
+---
+title: "Fundamentals of Computing and Data Display"
+subtitle: reddit
+output:
+  html_document:
+    df_print: paged
+---
+
+## Setup
+
+```{r}
+# install.packages("RedditExtractoR")
+# install.packages("tidytext")
+```
+
+```{r}
+library(tidytext)
+library(RedditExtractoR)
+```
+
+## Collecting reddit data
+
+We will use the package `RedditExtractoR` to obtain submission and comment data from reddit. Unfortunately, this package is not ideal for some of the tasks we may be interested in. Since I am not aware of fully functional R packages for obtaining reddit data from R, I have relied mostly on python.
+
+```{r}
+# We search for submissions which contain the word 'biden' to subreddit 'liberal'. From the resulting df, we get the URLs pointing to each submission. 
+biden_urls <- find_thread_urls(keywords = "biden",
+                                       subreddit = "liberal",
+                                       sort_by = "top")
+
+head(biden_urls$url)
+```
+
+We next get the comments to the submissions that we pulled above using the URLs of the submissions as reference.
+```{r}
+biden_content <- get_thread_content(urls = biden_urls$url[1:5])
+```
+Using `post_date` (submission) and `comm_date` (comment), we can select submissions and comments based on the time they were posted. Using `link`, we could try to obtain additional information about submission content (e.g., link may post to a news article). `Structure` allows us to obtain an overview of the comment structure. Most interestingly, `comment` gives us the content of the comment.
+
+```{r}
+head(biden_content$comments)
+# Seems like there is some cleaning we will have to do!
+```
